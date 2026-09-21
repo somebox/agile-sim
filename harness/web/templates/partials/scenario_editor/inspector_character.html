@@ -15,6 +15,9 @@
   {% elif message %}
   <div class="chip text-xs">{{ message }}</div>
   {% endif %}
+  {% if backstory_shared %}
+  <div class="chip text-xs">Shared character — backstory is reused by other scenarios and is read-only here.</div>
+  {% endif %}
   <form
     class="flex flex-col gap-2"
     hx-post="/scenarios/{{ slug|urlencode }}/edit/character/{{ inspect_cid|urlencode }}"
@@ -69,7 +72,7 @@
       </div>
       <input type="hidden" name="preview" :value="preview ? '1' : '0'" />
       <div x-show="!preview" x-cloak>
-        <textarea name="content" rows="10" data-easymde="markdown" class="w-full text-sm border border-[var(--color-border)] rounded-[var(--radius-sm)] p-2 bg-[var(--color-bg-panel)]">{{ backstory_raw }}</textarea>
+        <textarea name="content" rows="10" data-easymde="markdown" {% if backstory_shared %}disabled{% endif %} class="w-full text-sm border border-[var(--color-border)] rounded-[var(--radius-sm)] p-2 bg-[var(--color-bg-panel)]">{{ backstory_raw }}</textarea>
       </div>
       <div x-show="preview" x-cloak class="panel panel-section prose-run text-sm">
         {% if backstory_html %}{{ backstory_html|safe }}{% else %}
@@ -77,6 +80,8 @@
         {% endif %}
       </div>
     </div>
+    {% if not backstory_shared %}
     <button type="submit" class="btn btn-primary text-xs self-start">Save backstory</button>
+    {% endif %}
   </form>
 </div>

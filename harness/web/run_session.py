@@ -16,6 +16,7 @@ from harness.runner import (
     load_api_key,
     load_preset_for_mode,
     merge_coach_mode,
+    merge_model_counts,
     prepare_run_dir,
     resolve_coach_preset_path,
     step_turn,
@@ -45,6 +46,8 @@ def _write_interim_summary(
     cost: float,
     elapsed_s: float,
     live: bool,
+    requested_models: dict[str, str] | None = None,
+    served_models: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     summary = {
         "run_id": run_root.name,
@@ -62,6 +65,8 @@ def _write_interim_summary(
             "output_tokens": tokens_out,
             "cost": cost,
             "elapsed_s": round(elapsed_s, 3),
+            "requested_models": dict(requested_models or {}),
+            "served_models": dict(served_models or {}),
         },
     }
     (run_root / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -85,6 +90,7 @@ class RunSession:
     tokens_in: int = 0
     tokens_out: int = 0
     cost: float = 0.0
+    served_models: dict[str, int] = field(default_factory=dict)
     started_monotonic: float = 0.0
     finished: bool = False
     stop_reason: str | None = None
@@ -180,6 +186,8 @@ class RunSession:
             cost=0.0,
             elapsed_s=0.0,
             live=True,
+            requested_models={"agent": agent_model, "coach": coach_model_f},
+            served_models={},
         )
         sess.last_completed_turn = 0
         return sess
@@ -234,6 +242,7 @@ class RunSession:
         summaries_path = run_root / "summary.json"
         tokens_in = tokens_out = 0
         cost = 0.0
+        served_models: dict[str, int] = {}
         if summaries_path.is_file():
             try:
                 s = json.loads(summaries_path.read_text(encoding="utf-8"))
@@ -241,6 +250,7 @@ class RunSession:
                 tokens_in = int(t.get("input_tokens") or 0)
                 tokens_out = int(t.get("output_tokens") or 0)
                 cost = float(t.get("cost") or 0)
+                merge_model_counts(served_models, t.get("served_models") or {})
             except (json.JSONDecodeError, OSError, TypeError, ValueError):
                 pass
 
@@ -273,6 +283,7 @@ class RunSession:
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             cost=cost,
+            served_models=served_models,
             started_monotonic=_time.perf_counter(),
             finished=finished,
             stop_reason="restored" if finished else None,
@@ -296,6 +307,8 @@ class RunSession:
             cost=self.cost,
             elapsed_s=self._elapsed(),
             live=not self.finished,
+            requested_models={"agent": self.agent_model, "coach": self.coach_model},
+            served_models=self.served_models,
         )
 
     def _append_run_end(self, summary: dict[str, Any]) -> None:
@@ -344,6 +357,7 @@ class RunSession:
             self.tokens_in += int(du["input_tokens"])
             self.tokens_out += int(du["output_tokens"])
             self.cost += float(du["cost"])
+            merge_model_counts(self.served_models, du.get("served_models") or {})
             summary = self._persist_summary()
 
             if stop == "cancelled":

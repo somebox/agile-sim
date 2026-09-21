@@ -42,11 +42,13 @@ from harness.web.run_reader import (
 )
 from harness.web.run_session import SESSIONS, RunSession
 from harness.web.scenario_io import (
+    character_md_path,
     create_character,
     delete_character,
     delete_channel,
     delete_team,
     delete_work_item,
+    is_shared_character_path,
     load_scenario_yaml,
     lock_state,
     process_yaml_path,
@@ -1408,7 +1410,7 @@ def create_app(*, runs_dir: Path | None = None, scenarios_dir: Path | None = Non
         ch = (ctx.get("char_by_id") or {}).get(char_id)
         if not ch:
             raise HTTPException(status_code=404, detail="character not found")
-        md_path = scen_dir / str(ch.get("markdown_file") or f"characters/{char_id}.md")
+        md_path = character_md_path(scen_dir, ch)
         backstory = md_path.read_text(encoding="utf-8") if md_path.exists() else ""
         return render(
             "partials/scenario_editor/inspector_character.html",
@@ -1418,6 +1420,7 @@ def create_app(*, runs_dir: Path | None = None, scenarios_dir: Path | None = Non
             inspect_cid=char_id,
             backstory_raw=backstory,
             backstory_html=md_to_html(backstory) if backstory else "",
+            backstory_shared=is_shared_character_path(scen_dir, md_path),
             saved=False,
             preview=False,
             message="",
@@ -1489,7 +1492,7 @@ def create_app(*, runs_dir: Path | None = None, scenarios_dir: Path | None = Non
         ch = (ctx.get("char_by_id") or {}).get(char_id)
         if not ch:
             raise HTTPException(status_code=404, detail="character not found")
-        md_path = scen_dir / str(ch.get("markdown_file") or f"characters/{char_id}.md")
+        md_path = character_md_path(scen_dir, ch)
         backstory = md_path.read_text(encoding="utf-8") if md_path.exists() else ""
         resp = render(
             "partials/scenario_editor/inspector_character.html",
@@ -1499,6 +1502,7 @@ def create_app(*, runs_dir: Path | None = None, scenarios_dir: Path | None = Non
             inspect_cid=char_id,
             backstory_raw=backstory,
             backstory_html=md_to_html(backstory) if backstory else "",
+            backstory_shared=is_shared_character_path(scen_dir, md_path),
             saved=not bool(err),
             preview=False,
             message=msg,
@@ -1542,6 +1546,7 @@ def create_app(*, runs_dir: Path | None = None, scenarios_dir: Path | None = Non
             inspect_cid=char_id,
             backstory_raw=content,
             backstory_html=md_to_html(content) if content else "",
+            backstory_shared=is_shared_character_path(scen_dir, character_md_path(scen_dir, ch)),
             saved=not bool(err),
             preview=preview_on,
             message=msg,

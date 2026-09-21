@@ -1,0 +1,22 @@
+{# Renders a chip showing the model serving a run, for display next to the cost badge.
+   With openrouter/auto the router picks a concrete model per call, so we show what
+   actually served (most-used first, "+N" for others) and fall back to the requested
+   model before any call has run. `totals` is the run summary's `totals` dict. #}
+{% macro model_badge(totals) %}
+{% set served = (totals.get('served_models') if totals else {}) or {} %}
+{% set requested = (totals.get('requested_models') if totals else {}) or {} %}
+{% set req_agent = requested.get('agent') %}
+{% set req_coach = requested.get('coach') %}
+{% set is_auto = (req_agent == 'openrouter/auto') or (req_coach == 'openrouter/auto') %}
+{% if served %}
+  {% set pairs = served | dictsort(by='value', reverse=true) %}
+  {% set primary = pairs[0][0] %}
+  {% set extra = pairs | length - 1 %}
+  {%- set title -%}
+  Served: {% for m, n in pairs %}{{ m }} ({{ n }}){% if not loop.last %}, {% endif %}{% endfor %}{% if req_agent %} · requested: agent={{ req_agent }}{% if req_coach and req_coach != req_agent %}, coach={{ req_coach }}{% endif %}{% endif %}
+  {%- endset -%}
+  <span class="chip" title="{{ title }}">{% if is_auto %}auto: {% endif %}{{ primary.split('/') | last }}{% if extra > 0 %} +{{ extra }}{% endif %}</span>
+{% elif req_agent %}
+  <span class="chip" title="Requested model: agent={{ req_agent }}{% if req_coach and req_coach != req_agent %}, coach={{ req_coach }}{% endif %}">Model: {{ req_agent.split('/') | last }}{% if req_coach and req_coach != req_agent %} / {{ req_coach.split('/') | last }}{% endif %}</span>
+{% endif %}
+{% endmacro %}

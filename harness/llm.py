@@ -87,11 +87,16 @@ def chat_structured(
 
 
 def merge_usage(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
-    return {
+    merged = {
         "input_tokens": int(a.get("input_tokens", 0)) + int(b.get("input_tokens", 0)),
         "output_tokens": int(a.get("output_tokens", 0)) + int(b.get("output_tokens", 0)),
         "cost": float(a.get("cost", 0) or 0) + float(b.get("cost", 0) or 0),
     }
+    # Keep the most recent served model (the retry actually produced the result).
+    served = b.get("served_model") or a.get("served_model")
+    if served:
+        merged["served_model"] = served
+    return merged
 
 
 def now_ms() -> int:

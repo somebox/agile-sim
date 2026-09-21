@@ -42,13 +42,18 @@
       {% endfor %}
     </div>
     {% endif %}
+    <datalist id="model-options">
+      <option value="openrouter/auto"></option>
+      <option value="google/gemini-3-flash-preview"></option>
+    </datalist>
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-semibold">Agent model</span>
-      <input name="agent_model" value="google/gemini-3-flash-preview" class="border border-[var(--color-border)] rounded-[var(--radius-sm)] px-2 py-2 font-mono" />
+      <input name="agent_model" value="openrouter/auto" list="model-options" class="border border-[var(--color-border)] rounded-[var(--radius-sm)] px-2 py-2 font-mono" />
+      <span class="text-xs text-[var(--color-text-muted)]">Use <code>openrouter/auto</code> to let OpenRouter pick a model per call; the model that actually served is shown next to the cost badge.</span>
     </label>
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-semibold">Coach model (optional)</span>
-      <input name="coach_model" placeholder="defaults to agent model" class="border border-[var(--color-border)] rounded-[var(--radius-sm)] px-2 py-2 font-mono" />
+      <input name="coach_model" placeholder="defaults to agent model" list="model-options" class="border border-[var(--color-border)] rounded-[var(--radius-sm)] px-2 py-2 font-mono" />
     </label>
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-semibold">Coach mode</span>

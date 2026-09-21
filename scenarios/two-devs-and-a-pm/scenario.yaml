@@ -27,7 +27,7 @@ characters:
     name: Priya Shah
     role: Tech lead
     sprite_set: char_priya
-    markdown_file: characters/priya.md
+    markdown_file: ../_characters/priya.md
     initial_vitals:
       energy: 70
       motivation: 75
@@ -36,7 +36,7 @@ characters:
     name: Marcus Chen
     role: Backend engineer
     sprite_set: char_marcus
-    markdown_file: characters/marcus.md
+    markdown_file: ../_characters/marcus-chen.md
     initial_vitals:
       energy: 65
       motivation: 70
@@ -45,7 +45,7 @@ characters:
     name: Lin Okonkwo
     role: Product manager
     sprite_set: char_lin
-    markdown_file: characters/lin.md
+    markdown_file: ../_characters/lin.md
     initial_vitals:
       energy: 75
       motivation: 72

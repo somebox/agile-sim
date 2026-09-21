@@ -37,7 +37,7 @@ characters:
   - id: alex
     name: Alex Nguyen
     role: Tech lead (Falcon)
-    markdown_file: characters/alex.md
+    markdown_file: ../_characters/alex.md
     initial_vitals:
       energy: 68
       motivation: 72
@@ -45,7 +45,7 @@ characters:
   - id: jordan
     name: Jordan Patel
     role: Engineer (Falcon)
-    markdown_file: characters/jordan.md
+    markdown_file: ../_characters/jordan.md
     initial_vitals:
       energy: 72
       motivation: 70
@@ -53,7 +53,7 @@ characters:
   - id: sam
     name: Sam Okoro
     role: Tech lead (Raven)
-    markdown_file: characters/sam.md
+    markdown_file: ../_characters/sam.md
     initial_vitals:
       energy: 70
       motivation: 74
@@ -61,7 +61,7 @@ characters:
   - id: riley
     name: Riley Kim
     role: Engineer (Raven)
-    markdown_file: characters/riley.md
+    markdown_file: ../_characters/riley.md
     initial_vitals:
       energy: 74
       motivation: 71

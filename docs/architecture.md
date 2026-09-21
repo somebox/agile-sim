@@ -170,12 +170,14 @@ File-first. Keep dependencies and operational complexity low; reach for a databa
 │   └── settings.yaml              # global app settings (model tiers, etc.)
 │
 ├── scenarios/
+│   ├── _characters/                # shared character library, reused across scenarios
+│   │   ├── priya.md
+│   │   └── marcus-chen.md
 │   ├── two-teams-one-integration/
 │   │   ├── scenario.yaml          # structured definition
 │   │   ├── setting.md             # free-text world description
-│   │   ├── characters/            # one markdown file per character
-│   │   │   ├── priya.md
-│   │   │   └── marcus.md
+│   │   ├── characters/            # scenario-local characters (not reused elsewhere)
+│   │   │   └── lin.md
 │   │   ├── process.yaml           # rules / rituals / decision rights
 │   │   ├── best_practices.yaml    # scenario-specific additions
 │   │   └── assets/                # scenario-bound images, sprite overrides
@@ -192,6 +194,8 @@ File-first. Keep dependencies and operational complexity low; reach for a databa
 ```
 
 A scenario is a folder of YAML + markdown — versionable in git, hand-editable, diff-friendly. The structured fields live in YAML; prose (settings, character backstories) lives in markdown files referenced from the YAML. This keeps prose in a comfortable editor and structure in a parseable form.
+
+**Reusing characters across scenarios.** A character's `markdown_file` is just a path relative to the scenario folder, so it can point outside it — e.g. `markdown_file: ../_characters/priya.md` to reuse a persona from the shared library at `scenarios/_characters/`. A scenario's own `characters[]` entry still defines that character's id, name, role, sprite, and `initial_vitals` locally (those can differ per scenario even when the backstory is shared); only the prose backstory is shared. The scenario editor treats any character whose markdown file resolves outside its own folder as read-only — edit the shared file directly, or copy it into the scenario's own `characters/` folder first if you want to fork the backstory.
 
 The global folder lives wherever the app is deployed and holds the standard library: best-practices library, vital defaults, sprites, app settings. Scenarios may override or extend.
 

@@ -86,6 +86,52 @@ def test_run_session_advance_and_coach_post(tmp_path: Path) -> None:
     asyncio.run(_go())
 
 
+class AutoStubClient:
+    """Stub that reports a `served_model` like `openrouter/auto` does."""
+
+    def __init__(self, responses: list[str], served: str) -> None:
+        self._responses = list(responses)
+        self._served = served
+        self._i = 0
+
+    def chat_text(self, model, messages, temperature=0.7, max_tokens=4096):
+        r = self._responses[self._i % len(self._responses)]
+        self._i += 1
+        return r, {"input_tokens": 1, "output_tokens": 1, "cost": 0.0, "served_model": self._served}
+
+
+def test_run_session_accumulates_served_models(tmp_path: Path) -> None:
+    async def _go() -> None:
+        bundle = load_scenario(REPO / "scenarios" / "two-devs-and-a-pm")
+        bundle.scenario["goals"]["max_turns"] = 2
+
+        seq = [_agent("priya"), _agent("marcus"), _agent("lin"), _coach()]
+        stub = AutoStubClient(seq, served="google/gemini-2.0-flash")
+        sess = RunSession.start(
+            scenario_dir=bundle.path,
+            runs_dir=tmp_path,
+            agent_model="openrouter/auto",
+            coach_model="openrouter/auto",
+            coach_mode_cli="human",  # coach makes no LLM call; only agents do
+            coach_preset_cli=None,
+            secrets=None,
+            client=stub,
+            seed=None,
+        )
+        key = sess.run_root.name
+        SESSIONS[key] = sess
+        try:
+            await sess.advance()
+            totals = json.loads((sess.run_root / "summary.json").read_text())["totals"]
+            assert totals["requested_models"]["agent"] == "openrouter/auto"
+            # 3 agents served by the auto-picked model on the first turn.
+            assert totals["served_models"]["google/gemini-2.0-flash"] == 3
+        finally:
+            del SESSIONS[key]
+
+    asyncio.run(_go())
+
+
 def test_world_from_snapshot_roundtrip(tmp_path: Path) -> None:
     scen = tmp_path / "scenario.yaml"
     scen.write_text(

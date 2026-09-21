@@ -26,6 +26,10 @@ cd agile-sim
 uv pip install -e ".[dev]"   # or: pip install -e ".[dev]"
 # Single run
 agile-harness run scenarios/two-devs-and-a-pm --model google/gemini-3-flash-preview
+# Or let OpenRouter pick a model per call (the model that actually served each
+# call is recorded in summary.json totals.served_models and shown next to the
+# cost badge in the UI):
+agile-harness run scenarios/two-devs-and-a-pm --model openrouter/auto
 # Conflict + leadership outcomes (coach DMs `dm/<id>` + team channel `#eng-pilot`)
 agile-harness run scenarios/priority-conflict-coaching -v
 # Two teams, shared staging (Falcon vs Raven) + coach A/B matrix example

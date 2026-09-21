@@ -72,6 +72,21 @@ def character_md_path(scenario_dir: Path, character: dict[str, Any]) -> Path:
     return scenario_dir / rel
 
 
+def is_shared_character_path(scenario_dir: Path, path: Path) -> bool:
+    """True if a character's markdown file lives outside its scenario folder.
+
+    Such files come from the shared library (`scenarios/_characters/`) and
+    must not be edited or deleted through a single scenario's editor, since
+    other scenarios may reference the same file.
+    """
+
+    try:
+        path.resolve().relative_to(scenario_dir.resolve())
+        return False
+    except ValueError:
+        return True
+
+
 _CHAR_ID_RE = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
 
@@ -138,6 +153,11 @@ def write_character_backstory(
     if row is None:
         raise ValueError("character not found")
     p = character_md_path(scenario_dir, row)
+    if is_shared_character_path(scenario_dir, p):
+        raise ValueError(
+            "this character's backstory is shared across scenarios "
+            f"({p}); edit it in the shared library directly"
+        )
     p.parent.mkdir(parents=True, exist_ok=True)
     body = content or ""
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=str(p.parent), delete=False) as tf:
@@ -190,7 +210,7 @@ def delete_character(scenario_dir: Path, *, char_id: str) -> None:
     data["characters"] = [c for c in chars if str(c.get("id", "")).strip() != cid]
     write_scenario_yaml(scenario_dir, data)
     p = character_md_path(scenario_dir, row)
-    if p.exists():
+    if p.exists() and not is_shared_character_path(scenario_dir, p):
         p.unlink()
 
 

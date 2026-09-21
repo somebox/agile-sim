@@ -29,7 +29,7 @@ characters:
   - id: lia
     name: Lia Ortega
     role: Product manager (stuck between leadership and eng)
-    markdown_file: characters/lia.md
+    markdown_file: ../_characters/lia.md
     initial_vitals:
       energy: 62
       motivation: 70
@@ -37,7 +37,7 @@ characters:
   - id: marcus
     name: Marcus Webb
     role: Tech lead
-    markdown_file: characters/marcus.md
+    markdown_file: ../_characters/marcus-webb.md
     initial_vitals:
       energy: 55
       motivation: 65
@@ -45,7 +45,7 @@ characters:
   - id: dana
     name: Dana Frost
     role: Senior engineer
-    markdown_file: characters/dana.md
+    markdown_file: ../_characters/dana.md
     initial_vitals:
       energy: 60
       motivation: 58

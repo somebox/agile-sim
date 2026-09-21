@@ -1,3 +1,4 @@
+{% import "partials/_model_badge.html" as mb %}
 <div class="flex flex-col gap-4 max-w-5xl">
   {% if bundle.summary.get('aborted_stress') %}
   <div class="panel panel-section border-l-4 border-[var(--color-fail)]">
@@ -27,6 +28,7 @@
     <dt class="text-[var(--color-text-muted)]">Output tokens</dt><dd>{{ summary_totals.get('output_tokens', '—') }}</dd>
     <dt class="text-[var(--color-text-muted)]">Elapsed (s)</dt><dd>{{ summary_totals.get('elapsed_s', '—') }}</dd>
     <dt class="text-[var(--color-text-muted)]">Cost (USD)</dt><dd>{{ summary_totals.get('cost', '—') }}</dd>
+    <dt class="text-[var(--color-text-muted)]">Model</dt><dd>{{ mb.model_badge(summary_totals) }}</dd>
   </dl>
   {% if summary_org %}
   <div class="panel panel-section text-xs">

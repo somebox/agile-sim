@@ -1,3 +1,5 @@
+{% import "partials/_model_badge.html" as mb %}
+{% set dev_totals = bundle.summary.get('totals') or {} %}
 <div class="flex flex-col gap-4 text-sm">
   <div class="flex items-center justify-between gap-2">
     <h3 class="text-base font-bold">Dev panel</h3>
@@ -7,11 +9,23 @@
   <section class="panel panel-section">
     <h4 class="text-xs font-bold uppercase text-[var(--color-text-muted)] mb-2">Cost / latency overview</h4>
     <dl class="grid grid-cols-2 gap-2 text-xs">
-      <dt class="text-[var(--color-text-muted)]">Input tokens</dt><dd>{{ (bundle.summary.get('totals') or {}).get('input_tokens', 0) }}</dd>
-      <dt class="text-[var(--color-text-muted)]">Output tokens</dt><dd>{{ (bundle.summary.get('totals') or {}).get('output_tokens', 0) }}</dd>
-      <dt class="text-[var(--color-text-muted)]">Cost</dt><dd>${{ '%.4f'|format(((bundle.summary.get('totals') or {}).get('cost', 0))|float) }}</dd>
-      <dt class="text-[var(--color-text-muted)]">Elapsed</dt><dd>{{ (bundle.summary.get('totals') or {}).get('elapsed_s', 0) }}s</dd>
+      <dt class="text-[var(--color-text-muted)]">Input tokens</dt><dd>{{ dev_totals.get('input_tokens', 0) }}</dd>
+      <dt class="text-[var(--color-text-muted)]">Output tokens</dt><dd>{{ dev_totals.get('output_tokens', 0) }}</dd>
+      <dt class="text-[var(--color-text-muted)]">Cost</dt><dd>${{ '%.4f'|format((dev_totals.get('cost', 0))|float) }}</dd>
+      <dt class="text-[var(--color-text-muted)]">Elapsed</dt><dd>{{ dev_totals.get('elapsed_s', 0) }}s</dd>
+      <dt class="text-[var(--color-text-muted)]">Model</dt><dd>{{ mb.model_badge(dev_totals) }}</dd>
     </dl>
+    {% set dev_served = dev_totals.get('served_models') or {} %}
+    {% if dev_served %}
+    <div class="mt-2 text-xs">
+      <div class="text-[var(--color-text-muted)] mb-1">Served models (calls)</div>
+      <ul class="list-none p-0 m-0 flex flex-col gap-0.5 font-mono">
+        {% for m, n in dev_served | dictsort(by='value', reverse=true) %}
+        <li>{{ m }} — {{ n }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </section>
 
   <section class="panel panel-section">

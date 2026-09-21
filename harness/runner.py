@@ -37,6 +37,23 @@ from harness.world import (
 )
 
 
+def merge_model_counts(dst: dict[str, int], src: dict[str, int]) -> None:
+    """Accumulate served-model call counts from ``src`` into ``dst`` in place."""
+
+    for model, n in (src or {}).items():
+        if model:
+            dst[str(model)] = dst.get(str(model), 0) + int(n)
+
+
+def record_served_model(counts: dict[str, int], usage: dict[str, Any]) -> str | None:
+    """Bump the served-model counter for one call; return the served model id."""
+
+    served = usage.get("served_model")
+    if served:
+        counts[str(served)] = counts.get(str(served), 0) + 1
+    return served
+
+
 def apply_agent_output(
     world: World,
     char_id: str,
@@ -216,7 +233,16 @@ def step_turn(
     tokens_in = 0
     tokens_out = 0
     cost = 0.0
+    served_models: dict[str, int] = {}
     cancel_check = should_cancel or (lambda: False)
+
+    def _du() -> dict[str, Any]:
+        return {
+            "input_tokens": tokens_in,
+            "output_tokens": tokens_out,
+            "cost": cost,
+            "served_models": dict(served_models),
+        }
 
     def emit(event: dict[str, Any]) -> None:
         if on_progress:
@@ -232,7 +258,7 @@ def step_turn(
         if cancel_check():
             _append_jsonl(timeline, {"kind": "turn_cancelled", "turn": world.turn, "at": f"agent:{cid}"})
             emit({"kind": "turn_cancelled", "turn": world.turn, "at": f"agent:{cid}"})
-            return {"input_tokens": tokens_in, "output_tokens": tokens_out, "cost": cost}, "cancelled"
+            return _du(), "cancelled"
         emit({"kind": "agent_start", "turn": world.turn, "character": cid})
         t0 = time.perf_counter()
         try:
@@ -256,6 +282,7 @@ def step_turn(
         tokens_in += int(usage.get("input_tokens", 0))
         tokens_out += int(usage.get("output_tokens", 0))
         cost += float(usage.get("cost", 0) or 0)
+        served = record_served_model(served_models, usage)
         _append_jsonl(
             llm_log,
             {
@@ -263,6 +290,7 @@ def step_turn(
                 "role": "agent",
                 "character": cid,
                 "model": agent_model,
+                "served_model": served,
                 "usage": usage,
                 "latency_ms": dt_ms,
             },
@@ -309,7 +337,7 @@ def step_turn(
     if cancel_check():
         _append_jsonl(timeline, {"kind": "turn_cancelled", "turn": world.turn, "at": "coach"})
         emit({"kind": "turn_cancelled", "turn": world.turn, "at": "coach"})
-        return {"input_tokens": tokens_in, "output_tokens": tokens_out, "cost": cost}, "cancelled"
+        return _du(), "cancelled"
     emit({"kind": "coach_start", "turn": world.turn, "source": coach_mode})
     coach_logged_model = coach_model
     try:
@@ -366,12 +394,14 @@ def step_turn(
                 world=world,
                 nudge_cap=coach_nudge_cap,
             )
+            served_c = record_served_model(served_models, usage_c)
             _append_jsonl(
                 llm_log,
                 {
                     "turn": world.turn,
                     "role": "coach",
                     "model": coach_model,
+                    "served_model": served_c,
                     "usage": usage_c,
                     "latency_ms": int((time.perf_counter() - t0_coach) * 1000),
                     "source": "llm",
@@ -438,15 +468,15 @@ def step_turn(
     if goal_met(world):
         _progress(verbose, progress_prefix, "stop: goal_met")
         emit({"kind": "turn_stop", "turn": world.turn, "stop": "goal_met"})
-        return {"input_tokens": tokens_in, "output_tokens": tokens_out, "cost": cost}, "goal_met"
+        return _du(), "goal_met"
     if goal_abort(world):
         _progress(verbose, progress_prefix, "stop: aborted_stress")
         emit({"kind": "turn_stop", "turn": world.turn, "stop": "aborted_stress"})
-        return {"input_tokens": tokens_in, "output_tokens": tokens_out, "cost": cost}, "aborted_stress"
+        return _du(), "aborted_stress"
 
     world.turn += 1
     emit({"kind": "turn_done", "turn": world.turn - 1})
-    return {"input_tokens": tokens_in, "output_tokens": tokens_out, "cost": cost}, None
+    return _du(), None
 
 
 def run_once(
@@ -486,6 +516,7 @@ def run_once(
     tokens_in = 0
     tokens_out = 0
     cost = 0.0
+    served_models: dict[str, int] = {}
     order = character_turn_order(bundle)
     coach_steps = 0 if coach_mode == "none" else 1
     _progress(
@@ -532,6 +563,7 @@ def run_once(
         tokens_in += int(du["input_tokens"])
         tokens_out += int(du["output_tokens"])
         cost += float(du["cost"])
+        merge_model_counts(served_models, du.get("served_models") or {})
         if stop:
             break
 
@@ -559,6 +591,8 @@ def run_once(
             "output_tokens": tokens_out,
             "cost": cost,
             "elapsed_s": round(elapsed_s, 3),
+            "requested_models": {"agent": agent_model, "coach": coach_model},
+            "served_models": served_models,
         },
     }
     (run_root / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
